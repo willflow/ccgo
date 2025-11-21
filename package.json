@@ -1,0 +1,51 @@
+{
+  "name": "ccgo",
+  "version": "1.0.0",
+  "description": "Simple Claude Code launcher with config management and environment variable injection",
+  "main": "dist/index.js",
+  "bin": {
+    "ccgo": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepack": "npm run build",
+    "dev": "tsc --watch"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "keywords": [
+    "claude-code",
+    "claude-launcher",
+    "anthropic",
+    "ai",
+    "coding-assistant",
+    "cli",
+    "config-manager"
+  ],
+  "author": "qilin",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/willflow/ccgo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/willflow/ccgo/issues"
+  },
+  "homepage": "https://github.com/willflow/ccgo#readme",
+  "dependencies": {
+    "boxen": "^5.1.2",
+    "chalk": "^4.1.2",
+    "conf": "^10.2.0",
+    "inquirer": "^8.2.7"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^8.2.10",
+    "@types/node": "^20.11.10",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
