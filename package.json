@@ -1,6 +1,6 @@
 {
   "name": "ccgo",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Simple Claude Code launcher with config management and environment variable injection",
   "main": "dist/index.js",
   "bin": {
