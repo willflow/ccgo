@@ -1,18 +1,34 @@
 # CCGO
 
-> 简单易用的 Claude Code 启动器
+> Claude Code 启动器 - 解决初次启动报错问题
 
-**CCGO** (Claude Code Go) 用于在启动 Claude Code 前，按配置文件注入环境变量，并支持多配置切换与无头模式。
+**CCGO** (Claude Code Go) 是专门用于解决 Claude Code 安装后初次启动时出现各种报错问题的启动器。它通过跳过官方的初次认证流程，让你能够直接使用 Claude Code。
 
-## ✨ 核心功能
+## ❓ 这个启动器解决什么问题
 
-- 🔧 **配置管理**：支持多个 profile
-- 🌍 **按配置注入环境变量**：profile 里有哪些键，就注入哪些键
-- 🚀 **快速启动**：一条命令启动 Claude Code
-- 🤝 **配置共享**：与 `ccs (cc-code-status)` 共享同一份配置文件
-- ⚡ **无头模式**：`-p/--prompt` 直接执行任务，不弹交互选择
+安装官方 Claude Code 后，初次执行 `claude` 命令时，经常会遇到各种报错导致无法正常使用。CCGO 通过以下方式解决这个问题：
+
+- ✅ **跳过初次认证流程**：自动配置 `hasCompletedOnboarding`，避免卡在第一屏
+- ✅ **环境变量注入**：支持自定义 API 端点和密钥
+- ✅ **多配置切换**：支持多个 profile（ 模型配置，例如各类中转站和国产模型 ），方便切换不同环境
 
 ## 📦 安装
+
+### 步骤 1：安装官方 Claude Code
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+**⚠️ 重要：安装完成后，不要执行 `claude` 命令启动！**
+
+如果你已经启动过并遇到了报错，建议先卸载 Claude Code：
+```bash
+npm uninstall -g @anthropic-ai/claude-code
+```
+然后重新安装。
+
+### 步骤 2：安装 CCGO 启动器
 
 ```bash
 npm install -g ccgo
@@ -20,7 +36,15 @@ npm install -g ccgo
 
 ## 🚀 快速开始
 
-### 1. 查看配置说明
+### 1. 初始化配置（必需）
+
+```bash
+ccgo init
+```
+
+这会配置 `~/.claude.json`，设置 `hasCompletedOnboarding: true`，跳过官方的初次认证流程。
+
+### 2. 配置环境变量（可选）
 
 ```bash
 ccgo config
@@ -33,20 +57,20 @@ ccgo config
 ```json
 {
   "profiles": {
+    "default": {
+      "ANTHROPIC_BASE_URL": "your_base_url",
+      "ANTHROPIC_AUTH_TOKEN": "your_api_key"
+    },
     "kimi": {
       "ANTHROPIC_BASE_URL": "https://api.moonshot.cn/anthropic",
       "ANTHROPIC_AUTH_TOKEN": "your_api_key",
-      "ANTHROPIC_MODEL": "kimi-k2.5",
-      "ANTHROPIC_DEFAULT_OPUS_MODEL": "kimi-k2.5",
-      "ANTHROPIC_DEFAULT_SONNET_MODEL": "kimi-k2.5",
-      "ANTHROPIC_DEFAULT_HAIKU_MODEL": "kimi-k2.5",
-      "CLAUDE_CODE_SUBAGENT_MODEL": "kimi-k2.5"
+      "ANTHROPIC_MODEL": "kimi-k2.5"
     }
   }
 }
 ```
 
-### 2. 启动 Claude Code
+### 3. 启动 Claude Code
 
 ```bash
 ccgo
@@ -54,7 +78,7 @@ ccgo
 
 有多个 profile 时，会交互选择一个。
 
-### 3. 无头模式执行任务
+### 4. 无头模式执行任务
 
 ```bash
 ccgo -p "执行xxx任务"
@@ -62,21 +86,13 @@ ccgo -p "执行xxx任务"
 
 无头模式下如果有多个 profile，默认使用第一个 profile。
 
-### 4. 初始化 Claude Code onboarding 状态
-
-```bash
-ccgo init
-```
-
-会在 `~/.claude.json` 写入或更新 `hasCompletedOnboarding: true`。
-
 ## 📖 命令说明
 
 | 命令 | 说明 |
 |------|------|
+| `ccgo init` | **【首次使用必需】** 初始化 Claude Code，跳过初次认证流程 |
 | `ccgo` | 启动 Claude Code（多 profile 时交互选择） |
 | `ccgo -p "任务"` | 无头模式执行任务（默认使用第一个 profile） |
-| `ccgo init` | 初始化 Claude Code 配置，写入 `hasCompletedOnboarding: true` |
 | `ccgo config` | 显示配置文件位置和示例 |
 | `ccgo help` | 显示帮助信息 |
 | `ccgo -v, --version` | 显示版本号 |

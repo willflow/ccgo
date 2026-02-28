@@ -1,7 +1,7 @@
 {
   "name": "ccgo",
   "version": "1.0.2",
-  "description": "Simple Claude Code launcher with config management and environment variable injection",
+  "description": "Claude Code 启动器 - 解决初次启动报错问题，支持环境变量注入和多配置切换",
   "main": "dist/index.js",
   "bin": {
     "ccgo": "dist/cli.js"
