@@ -162,9 +162,20 @@ export async function selectProfile(profiles: { name: string; config: any }[]): 
       name: 'selected',
       message: '选择要使用的配置:',
       choices: profiles.map(p => {
-        // 从 baseUrl 提取域名作为显示
-        const url = new URL(p.config.baseUrl);
-        const domain = url.hostname;
+        // 优先显示 ANTHROPIC_BASE_URL 的域名，避免配置缺失时崩溃
+        const baseUrl = typeof p.config?.ANTHROPIC_BASE_URL === 'string'
+          ? p.config.ANTHROPIC_BASE_URL
+          : '';
+
+        let domain = 'no-base-url';
+        if (baseUrl) {
+          try {
+            domain = new URL(baseUrl).hostname;
+          } catch {
+            domain = baseUrl;
+          }
+        }
+
         return {
           name: `${p.name} (${domain})`,
           value: p.name
@@ -245,10 +256,8 @@ export function showHelp(): void {
   console.log(chalk.gray('  ccgo [命令] [选项]'));
   console.log('');
   console.log(chalk.white('命令:'));
-  console.log(chalk.cyan('  config') + chalk.gray('         配置 API Key 和 Base URL'));
-  console.log(chalk.cyan('  config --list') + chalk.gray('  列出所有配置'));
-  console.log(chalk.cyan('  config --add') + chalk.gray('   添加新配置'));
-  console.log(chalk.cyan('  config --remove') + chalk.gray(' 删除配置'));
+  console.log(chalk.cyan('  init') + chalk.gray('           初始化 Claude Code 配置，跳过 onboarding 认证'));
+  console.log(chalk.cyan('  config') + chalk.gray('         显示配置文件位置和示例'));
   console.log(chalk.cyan('  help') + chalk.gray('           显示帮助信息'));
   console.log('');
   console.log(chalk.white('选项:'));
@@ -258,10 +267,13 @@ export function showHelp(): void {
   console.log(chalk.gray('  # 首次配置'));
   console.log(chalk.yellow('  ccgo config'));
   console.log('');
+  console.log(chalk.gray('  # 初始化 Claude Code onboarding 状态'));
+  console.log(chalk.yellow('  ccgo init'));
+  console.log('');
   console.log(chalk.gray('  # 启动 Claude Code'));
   console.log(chalk.yellow('  ccgo'));
   console.log('');
-  console.log(chalk.gray('  # 添加新配置'));
-  console.log(chalk.yellow('  ccgo config --add'));
+  console.log(chalk.gray('  # 无头模式启动并直接执行任务'));
+  console.log(chalk.yellow('  ccgo -p "执行xxx任务"'));
   console.log('');
 }

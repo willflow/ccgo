@@ -9,29 +9,25 @@ import * as os from 'os';
 import { CONFIG_NAME } from './constants';
 
 /**
- * API 配置接口
+ * Profile 配置接口（环境变量键值对）
  */
 export interface ApiConfig {
-  apiKey: string;        // API Key
-  baseUrl: string;       // API Base URL
-  model?: string;        // 可选：模型名称（ANTHROPIC_MODEL）
-  smallFastModel?: string; // 可选：小快速模型（ANTHROPIC_SMALL_FAST_MODEL）
-  configuredAt?: string; // 配置时间
-  version?: string;      // 配置版本
+  [envName: string]: string;
 }
 
 /**
  * 配置项（包含名称）
  */
-export interface ProfileConfig extends ApiConfig {
-  name: string;          // 配置名称
+export interface ProfileConfig {
+  name: string;           // 配置名称
+  config: ApiConfig;      // 环境变量配置
 }
 
 /**
  * 完整配置结构
  */
 export interface FullConfig {
-  profiles?: Record<string, ApiConfig>;  // 多个配置
+  profiles?: Record<string, ApiConfig>;   // 多个配置
 }
 
 /**
@@ -46,48 +42,62 @@ export class ConfigManager {
       cwd: path.join(os.homedir(), '.config', CONFIG_NAME)
     });
 
-    // 迁移旧配置（如果存在）
-    this.migrateOldConfig();
+    this.ensureProfilesContainer();
   }
 
   /**
-   * 迁移旧版本的单配置到新的多配置结构
+   * 确保 profiles 容器存在
    */
-  private migrateOldConfig(): void {
-    const oldApi = this.config.get('api' as any);
-
-    // 如果存在旧配置但没有 profiles，进行迁移
-    if (oldApi && !this.config.has('profiles')) {
-      const profileName = 'default';
-      this.config.set('profiles', {
-        [profileName]: {
-          apiKey: oldApi.apiKey,
-          baseUrl: oldApi.baseUrl,
-          model: oldApi.model,
-          smallFastModel: oldApi.smallFastModel,
-          configuredAt: oldApi.configuredAt,
-          version: oldApi.version
-        }
-      });
-      this.config.delete('api' as any);
-    }
-
-    // 清理旧的 defaultProfile 字段
-    if (this.config.has('defaultProfile' as any)) {
-      this.config.delete('defaultProfile' as any);
+  private ensureProfilesContainer(): void {
+    const profiles = this.config.get('profiles');
+    if (!profiles || typeof profiles !== 'object' || Array.isArray(profiles)) {
+      this.config.set('profiles', {});
     }
   }
 
   /**
-   * 检查是否有任何配置
+   * 规范化 profile 数据
+   */
+  private normalizeProfile(raw: unknown): ApiConfig {
+    const normalized: ApiConfig = {};
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      return normalized;
+    }
+
+    for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+      if (typeof value === 'string' && value.trim() !== '') {
+        normalized[key] = value;
+      }
+    }
+
+    return normalized;
+  }
+
+  /**
+   * 获取所有 profile（并做运行时校验）
+   */
+  private getProfilesRecord(): Record<string, ApiConfig> {
+    const rawProfiles = this.config.get('profiles') as unknown;
+    if (!rawProfiles || typeof rawProfiles !== 'object' || Array.isArray(rawProfiles)) {
+      return {};
+    }
+
+    const profiles: Record<string, ApiConfig> = {};
+    for (const [name, rawProfile] of Object.entries(rawProfiles)) {
+      profiles[name] = this.normalizeProfile(rawProfile);
+    }
+    return profiles;
+  }
+
+  /**
+   * 检查是否有任何 profile
    */
   hasAnyProfile(): boolean {
-    const profiles = this.config.get('profiles', {});
-    return Object.keys(profiles).length > 0;
+    return this.getProfileNames().length > 0;
   }
 
   /**
-   * 检查是否已配置 API Key（向后兼容）
+   * 检查是否有 profile（向后兼容）
    */
   hasApiKey(): boolean {
     return this.hasAnyProfile();
@@ -97,8 +107,7 @@ export class ConfigManager {
    * 获取所有配置名称
    */
   getProfileNames(): string[] {
-    const profiles = this.config.get('profiles', {});
-    return Object.keys(profiles);
+    return Object.keys(this.getProfilesRecord());
   }
 
   /**
@@ -112,14 +121,14 @@ export class ConfigManager {
    * 检查配置是否存在
    */
   hasProfile(name: string): boolean {
-    return this.config.has(`profiles.${name}`);
+    return this.getProfileNames().includes(name);
   }
 
   /**
    * 获取指定配置
    */
   getProfile(name: string): ApiConfig | undefined {
-    return this.config.get(`profiles.${name}`);
+    return this.getProfilesRecord()[name];
   }
 
   /**
@@ -144,49 +153,15 @@ export class ConfigManager {
   }
 
   /**
-   * 获取 API Key（向后兼容）
-   */
-  getApiKey(): string | undefined {
-    const current = this.getCurrentProfile();
-    return current?.config.apiKey;
-  }
-
-  /**
-   * 获取 Base URL（向后兼容）
-   */
-  getBaseUrl(): string | undefined {
-    const current = this.getCurrentProfile();
-    return current?.config.baseUrl;
-  }
-
-  /**
-   * 获取模型名称（可选）
-   */
-  getModel(): string | undefined {
-    const current = this.getCurrentProfile();
-    return current?.config.model;
-  }
-
-  /**
-   * 获取小快速模型（可选）
-   */
-  getSmallFastModel(): string | undefined {
-    const current = this.getCurrentProfile();
-    return current?.config.smallFastModel;
-  }
-
-  /**
    * 添加或更新配置
    */
-  saveProfile(name: string, config: Omit<ApiConfig, 'configuredAt' | 'version'>): void {
-    const fullConfig: ApiConfig = {
-      ...config,
-      configuredAt: new Date().toISOString(),
-      version: '1.0.0'
-    };
+  saveProfile(name: string, config: ApiConfig): void {
+    if (!name || !name.trim()) {
+      throw new Error('配置名称不能为空');
+    }
 
-    const profiles = this.config.get('profiles', {});
-    profiles[name] = fullConfig;
+    const profiles = this.getProfilesRecord();
+    profiles[name] = this.normalizeProfile(config);
     this.config.set('profiles', profiles);
   }
 
@@ -198,15 +173,15 @@ export class ConfigManager {
       throw new Error(`配置 "${name}" 不存在`);
     }
 
-    const profiles = this.config.get('profiles', {});
+    const profiles = this.getProfilesRecord();
     delete profiles[name];
     this.config.set('profiles', profiles);
   }
 
   /**
-   * 保存 API 配置（向后兼容，保存为 default）
+   * 保存配置（向后兼容方法名）
    */
-  saveApiConfig(config: Omit<ApiConfig, 'configuredAt' | 'version'>, name: string = 'default'): void {
+  saveApiConfig(config: ApiConfig, name: string = 'default'): void {
     this.saveProfile(name, config);
   }
 
@@ -214,10 +189,10 @@ export class ConfigManager {
    * 获取所有配置（含配置名称）
    */
   getAllProfiles(): ProfileConfig[] {
-    const profiles = this.config.get('profiles', {});
+    const profiles = this.getProfilesRecord();
     return Object.entries(profiles).map(([name, config]) => ({
       name,
-      ...config
+      config
     }));
   }
 
@@ -226,6 +201,7 @@ export class ConfigManager {
    */
   reset(): void {
     this.config.clear();
+    this.ensureProfilesContainer();
   }
 
   /**
@@ -257,13 +233,12 @@ export class ConfigManager {
 
     if (!apiConfig) return undefined;
 
-    const safeConfig = { ...apiConfig };
-    if (safeConfig.apiKey) {
-      const key = safeConfig.apiKey;
-      if (key.length > 12) {
-        safeConfig.apiKey = `${key.substring(0, 8)}...${key.substring(key.length - 4)}`;
+    const safeConfig: ApiConfig = {};
+    for (const [key, value] of Object.entries(apiConfig)) {
+      if (value.length > 12) {
+        safeConfig[key] = `${value.substring(0, 6)}...${value.substring(value.length - 4)}`;
       } else {
-        safeConfig.apiKey = '***';
+        safeConfig[key] = '***';
       }
     }
     return safeConfig;

@@ -2,16 +2,15 @@
 
 > 简单易用的 Claude Code 启动器
 
-**CCGO** (Claude Code Go) 是一个轻量级的 Claude Code 启动工具，专注于核心功能：配置管理、环境变量注入和快速启动。
+**CCGO** (Claude Code Go) 用于在启动 Claude Code 前，按配置文件注入环境变量，并支持多配置切换与无头模式。
 
 ## ✨ 核心功能
 
-- 🔧 **配置管理** - 支持多个 API 配置，轻松切换
-- 🌍 **环境变量注入** - 自动注入 `ANTHROPIC_API_KEY`、`ANTHROPIC_BASE_URL` 等环境变量
-- 🚀 **快速启动** - 一键启动 Claude Code，无需手动配置环境变量
-- 🔄 **配置兼容** - 与 ccs (cc-code-status) 共享配置，无需重复配置
-- 🌐 **跨平台支持** - 支持 Windows、macOS、Linux
-- 📦 **零依赖困扰** - 安装即用，无需复杂配置
+- 🔧 **配置管理**：支持多个 profile
+- 🌍 **按配置注入环境变量**：profile 里有哪些键，就注入哪些键
+- 🚀 **快速启动**：一条命令启动 Claude Code
+- 🤝 **配置共享**：与 `ccs (cc-code-status)` 共享同一份配置文件
+- ⚡ **无头模式**：`-p/--prompt` 直接执行任务，不弹交互选择
 
 ## 📦 安装
 
@@ -21,18 +20,31 @@ npm install -g ccgo
 
 ## 🚀 快速开始
 
-### 1. 首次配置
+### 1. 查看配置说明
 
 ```bash
 ccgo config
 ```
 
-按照交互式提示输入：
-- **配置名称**：为你的配置起一个名字（如 `default`、`glm`、`deepseek`）
-- **API Base URL**：你的 API 服务地址
-- **API Key**：你的 API 密钥
-- **Model**（可选）：主要使用的模型名称
-- **Small Fast Model**（可选）：快速小模型名称
+命令会输出共享配置文件路径和配置示例。按提示手动编辑该配置文件。
+
+配置示例：
+
+```json
+{
+  "profiles": {
+    "kimi": {
+      "ANTHROPIC_BASE_URL": "https://api.moonshot.cn/anthropic",
+      "ANTHROPIC_AUTH_TOKEN": "your_api_key",
+      "ANTHROPIC_MODEL": "kimi-k2.5",
+      "ANTHROPIC_DEFAULT_OPUS_MODEL": "kimi-k2.5",
+      "ANTHROPIC_DEFAULT_SONNET_MODEL": "kimi-k2.5",
+      "ANTHROPIC_DEFAULT_HAIKU_MODEL": "kimi-k2.5",
+      "CLAUDE_CODE_SUBAGENT_MODEL": "kimi-k2.5"
+    }
+  }
+}
+```
 
 ### 2. 启动 Claude Code
 
@@ -40,90 +52,41 @@ ccgo config
 ccgo
 ```
 
+有多个 profile 时，会交互选择一个。
+
+### 3. 无头模式执行任务
+
+```bash
+ccgo -p "执行xxx任务"
+```
+
+无头模式下如果有多个 profile，默认使用第一个 profile。
+
+### 4. 初始化 Claude Code onboarding 状态
+
+```bash
+ccgo init
+```
+
+会在 `~/.claude.json` 写入或更新 `hasCompletedOnboarding: true`。
+
 ## 📖 命令说明
 
 | 命令 | 说明 |
 |------|------|
-| `ccgo` | 启动 Claude Code（如果有多个配置会提示选择） |
-| `ccgo config` | 配置或重新配置 API |
-| `ccgo config --list` | 列出所有配置 |
-| `ccgo config --add` | 添加新配置 |
-| `ccgo config --remove` | 删除配置 |
+| `ccgo` | 启动 Claude Code（多 profile 时交互选择） |
+| `ccgo -p "任务"` | 无头模式执行任务（默认使用第一个 profile） |
+| `ccgo init` | 初始化 Claude Code 配置，写入 `hasCompletedOnboarding: true` |
+| `ccgo config` | 显示配置文件位置和示例 |
 | `ccgo help` | 显示帮助信息 |
 | `ccgo -v, --version` | 显示版本号 |
 
-## 🌐 常见 API 服务
+## 🔧 配置规则
 
-以下是一些支持 Anthropic 兼容 API 的服务商：
-
-| 服务商 | Base URL | 说明 |
-|--------|----------|------|
-| Anthropic 官方 | `https://api.anthropic.com` | 官方 API（需要国际网络） |
-| 智谱 GLM | `https://open.bigmodel.cn/api/anthropic` | 国内可用 |
-| Kimi | `https://api.moonshot.cn/anthropic` | 国内可用 |
-| 通义千问 | `https://dashscope.aliyuncs.com/compatible-mode/v1` | 国内可用 |
-| DeepSeek | `https://api.deepseek.com` | 国内可用 |
-
-## 🔧 环境变量注入
-
-CCGO 会自动注入以下环境变量到 Claude Code 进程：
-
-- `ANTHROPIC_API_KEY` - API 密钥
-- `ANTHROPIC_BASE_URL` - API Base URL
-- `ANTHROPIC_MODEL`（可选）- 主要模型名称
-- `ANTHROPIC_SMALL_FAST_MODEL`（可选）- 小快速模型名称
-
-## 📝 使用示例
-
-### 示例 1: 配置智谱 GLM
-
-```bash
-$ ccgo config
-配置名称: glm
-API Base URL: https://open.bigmodel.cn/api/anthropic
-API Key: ********
-是否配置可选参数（模型名称）？ No
-
-✓ 配置保存成功！
-配置名称: glm
-```
-
-### 示例 2: 管理多个配置
-
-```bash
-# 添加第一个配置（智谱 GLM）
-$ ccgo config
-配置名称: glm
-...
-
-# 添加第二个配置（DeepSeek）
-$ ccgo config --add
-配置名称: deepseek
-API Base URL: https://api.deepseek.com
-...
-
-# 启动时选择配置
-$ ccgo
-? 选择要使用的配置:
-❯ glm (open.bigmodel.cn)
-  deepseek (api.deepseek.com)
-```
-
-### 示例 3: 查看所有配置
-
-```bash
-$ ccgo config --list
-
-📋 配置列表:
-
-  glm
-    Base URL: https://open.bigmodel.cn/api/anthropic
-    API Key:  sk-xxxxx...yyyy
-
-  deepseek
-    Base URL: https://api.deepseek.com
-    API Key:  sk-aaaaa...bbbb
-```
+- `profiles.<name>` 下必须是“环境变量键值对”
+- 启动时仅注入该 profile 中有值的键
+- 不会自动补默认字段，不会做字段映射
+- 如果没有 profile 或 profile 为空，启动会直接报错
 
 ## 🔍 配置文件位置
 
@@ -131,42 +94,6 @@ $ ccgo config --list
 - **macOS/Linux**: `~/.config/cc-code-status/config.json`
 - **Windows**: `%APPDATA%\cc-code-status\config.json`
 
-## 🔄 与 ccs (cc-code-status) 的配置兼容
-
-**重要提示：** `ccgo` 与 `ccs` (cc-code-status) **共享同一份配置文件**！
-
-这意味着：
-- ✅ 如果你已经配置了 `ccs`，可以直接使用 `ccgo`，无需重复配置
-- ✅ 在 `ccgo` 中添加的配置，`ccs` 也能使用
-- ✅ 两个工具可以同时安装，配置互通
-- ✅ 将来 `ccs` 可以依赖 `ccgo` 作为核心启动器
-
-```bash
-# 查看配置（两个命令结果相同）
-ccs config --list
-ccgo config --list
-
-# 在 ccgo 中添加配置
-ccgo config --add
-
-# ccs 也能看到这个配置
-ccs config --list
-```
-
-## 🆚 与 ccs (cc-code-status) 的功能区别
-
-`ccgo` 是从 `ccs` 精简而来的轻量级版本：
-
-| 特性 | ccgo | ccs |
-|------|-----------|----------------|
-| 配置管理 | ✅ | ✅ |
-| 环境变量注入 | ✅ | ✅ |
-| 启动 Claude Code | ✅ | ✅ |
-| 代码统计 | ❌ | ✅ |
-| 数据上报 | ❌ | ✅ |
-| 状态栏插件 | ❌ | ✅ |
-
-如果你需要代码统计和数据上报功能，请使用 [ccs (cc-code-status)](https://github.com/willflow/cc-code-status)。
 
 ## 🤝 贡献
 
@@ -175,12 +102,3 @@ ccs config --list
 ## 📄 许可证
 
 MIT © qilin
-
-## 🔗 相关链接
-
-- [Claude Code 官方文档](https://docs.claude.com/code)
-- [ccs (cc-code-status)](https://github.com/willflow/cc-code-status) - 功能更丰富的版本，包含代码统计和数据上报
-
----
-
-**享受简单易用的 Claude Code 启动体验！** 🚀

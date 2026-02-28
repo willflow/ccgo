@@ -7,15 +7,12 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import chalk from 'chalk';
 import { ConfigManager } from './config/manager';
 import { ClaudeLauncher } from './launcher';
 import {
-  showConfigPrompts,
-  confirmReconfigure,
   selectProfile,
-  showWelcome,
-  showConfigSuccess,
   showHelp
 } from './utils/prompts';
 import { checkClaudeInstallation } from './utils/installer';
@@ -44,6 +41,12 @@ async function main(): Promise<void> {
       return;
     }
 
+    // ========== 初始化命令 ==========
+    if (command === 'init') {
+      initializeClaudeOnboardingConfig();
+      return;
+    }
+
     // ========== 配置命令 ==========
     if (command === 'config') {
       await handleConfigCommand(args.slice(1));
@@ -65,104 +68,78 @@ async function main(): Promise<void> {
 }
 
 /**
+ * 初始化 Claude Code onboarding 配置
+ */
+function initializeClaudeOnboardingConfig(): void {
+  const homeDir = os.homedir();
+  const filePath = path.join(homeDir, '.claude.json');
+  let nextContent: Record<string, unknown> = { hasCompletedOnboarding: true };
+
+  if (fs.existsSync(filePath)) {
+    const rawContent = fs.readFileSync(filePath, 'utf-8');
+    const parsed = JSON.parse(rawContent);
+
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      nextContent = {
+        ...(parsed as Record<string, unknown>),
+        hasCompletedOnboarding: true
+      };
+    }
+  }
+
+  fs.writeFileSync(filePath, JSON.stringify(nextContent, null, 2), 'utf-8');
+
+  console.log('');
+  console.log(chalk.green('✓ Claude Code 初始化配置已完成'));
+  console.log(chalk.gray(`配置文件: ${filePath}`));
+  console.log('');
+}
+
+/**
  * 处理 config 命令
  */
 async function handleConfigCommand(subArgs: string[]): Promise<void> {
   const config = new ConfigManager();
+  const configPath = config.getConfigPath();
 
-  // --list: 列出所有配置
-  if (subArgs.includes('--list')) {
-    const profiles = config.getAllProfiles();
-    if (profiles.length === 0) {
-      console.log('');
-      console.log(chalk.yellow('暂无配置'));
-      console.log('');
-      console.log(chalk.gray('运行以下命令添加配置:'));
-      console.log(chalk.cyan('  ccgo config'));
-      console.log('');
-      return;
-    }
-
+  if (subArgs.length > 0) {
     console.log('');
-    console.log(chalk.cyan.bold('📋 配置列表:'));
+    console.log(chalk.yellow('⚠ config 子命令已精简，不再支持额外参数'));
     console.log('');
-    profiles.forEach(profile => {
-      const safeConfig = config.getSafeApiConfig(profile.name);
-      if (safeConfig) {
-        console.log(chalk.white.bold(`  ${profile.name}`));
-        console.log(chalk.gray(`    Base URL: ${safeConfig.baseUrl}`));
-        console.log(chalk.gray(`    API Key:  ${safeConfig.apiKey}`));
-        if (safeConfig.model) {
-          console.log(chalk.gray(`    Model:    ${safeConfig.model}`));
-        }
-        if (safeConfig.smallFastModel) {
-          console.log(chalk.gray(`    Small Fast Model: ${safeConfig.smallFastModel}`));
-        }
-        console.log('');
-      }
-    });
-    return;
   }
 
-  // --add: 添加新配置
-  if (subArgs.includes('--add')) {
-    const configData = await showConfigPrompts();
-    config.saveProfile(configData.name, {
-      apiKey: configData.apiKey,
-      baseUrl: configData.baseUrl,
-      model: configData.model,
-      smallFastModel: configData.smallFastModel
-    });
-    showConfigSuccess(configData.name);
-    return;
-  }
-
-  // --remove: 删除配置
-  if (subArgs.includes('--remove')) {
-    const profiles = config.getAllProfiles();
-    if (profiles.length === 0) {
-      console.log('');
-      console.log(chalk.yellow('暂无配置可删除'));
-      console.log('');
-      return;
-    }
-
-    const profileName = await selectProfile(
-      profiles.map(p => ({ name: p.name, config: p }))
-    );
-
-    config.removeProfile(profileName);
-    console.log('');
-    console.log(chalk.green(`✓ 配置 "${profileName}" 已删除`));
-    console.log('');
-    return;
-  }
-
-  // 默认：配置或重新配置
-  if (!config.hasAnyProfile()) {
-    // 首次配置
-    const configData = await showConfigPrompts();
-    config.saveProfile(configData.name, {
-      apiKey: configData.apiKey,
-      baseUrl: configData.baseUrl,
-      model: configData.model,
-      smallFastModel: configData.smallFastModel
-    });
-    showConfigSuccess(configData.name);
-  } else {
-    // 重新配置
-    const confirmed = await confirmReconfigure();
-    if (confirmed) {
-      const configData = await showConfigPrompts();
-      config.saveProfile(configData.name, {
-        apiKey: configData.apiKey,
-        baseUrl: configData.baseUrl,
-        model: configData.model,
-        smallFastModel: configData.smallFastModel
-      });
-      showConfigSuccess(configData.name);
+  // 默认：展示配置文件方案（不再逐项交互输入）
+  console.log('');
+  console.log(chalk.cyan.bold('🔧 配置说明'));
+  console.log(chalk.gray('请直接编辑配置文件，按 profile 维护环境变量键值对。'));
+  console.log('');
+  console.log(chalk.white('配置文件:'));
+  console.log(chalk.cyan(`  ${configPath}`));
+  console.log('');
+  console.log(chalk.white('示例结构:'));
+  console.log(chalk.gray(`{
+  "profiles": {
+    "kimi": {
+      "ANTHROPIC_BASE_URL": "https://api.moonshot.cn/anthropic",
+      "ANTHROPIC_AUTH_TOKEN": "your_api_key",
+      "ANTHROPIC_MODEL": "kimi-k2.5",
+      "ANTHROPIC_DEFAULT_OPUS_MODEL": "kimi-k2.5",
+      "ANTHROPIC_DEFAULT_SONNET_MODEL": "kimi-k2.5",
+      "ANTHROPIC_DEFAULT_HAIKU_MODEL": "kimi-k2.5",
+      "CLAUDE_CODE_SUBAGENT_MODEL": "kimi-k2.5"
     }
   }
+}`));
+  console.log('');
+}
+
+/**
+ * 根据命令行参数判断是否无头 prompt 模式
+ */
+function isHeadlessPromptMode(inputArgs: string[]): boolean {
+  return inputArgs.includes('-p')
+    || inputArgs.includes('--prompt')
+    || inputArgs.some(arg => arg.startsWith('--prompt='));
 }
 
 /**
@@ -174,10 +151,10 @@ async function runAsLauncher(launchArgs: string[]): Promise<void> {
   // 检查是否已配置
   if (!config.hasAnyProfile()) {
     console.log('');
-    console.log(chalk.yellow('⚠ 尚未配置 API Key'));
+    console.log(chalk.yellow('⚠ 尚未配置任何 profile'));
     console.log('');
-    console.log(chalk.gray('请先运行配置命令:'));
-    console.log(chalk.cyan('  ccgo config'));
+    console.log(chalk.gray('请先编辑配置文件:'));
+    console.log(chalk.cyan(`  ${config.getConfigPath()}`));
     console.log('');
     return;
   }
@@ -187,15 +164,28 @@ async function runAsLauncher(launchArgs: string[]): Promise<void> {
     return;
   }
 
-  // 选择配置（如果有多个）
-  let profileName: string | undefined;
   const profiles = config.getAllProfiles();
+  if (profiles.length === 0) {
+    console.log('');
+    console.log(chalk.red('✗ 配置文件中未找到可用 profile'));
+    console.log('');
+    return;
+  }
 
-  if (profiles.length === 1) {
+  // 选择配置：无头模式时默认第一个，交互模式保持原逻辑
+  const headlessPrompt = isHeadlessPromptMode(launchArgs);
+  let profileName: string;
+
+  if (headlessPrompt) {
+    profileName = profiles[0].name;
+    if (profiles.length > 1) {
+      console.log(chalk.gray(`已进入无头模式，默认使用第一个配置: ${profileName}`));
+    }
+  } else if (profiles.length === 1) {
     profileName = profiles[0].name;
   } else {
     profileName = await selectProfile(
-      profiles.map(p => ({ name: p.name, config: p }))
+      profiles.map(p => ({ name: p.name, config: p.config }))
     );
   }
 

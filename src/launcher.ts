@@ -36,12 +36,9 @@ export class ClaudeLauncher {
       ? this.config.getProfile(this.profileName)
       : this.config.getCurrentProfile()?.config;
 
-    const apiKey = profile?.apiKey;
-    const baseUrl = profile?.baseUrl;
-
-    if (!apiKey) {
+    if (!profile) {
       console.log('');
-      console.log(chalk.red('✗ 未找到 API Key 配置'));
+      console.log(chalk.red('✗ 未找到可用配置'));
       console.log('');
       console.log(chalk.gray('请先运行配置命令:'));
       console.log(chalk.cyan('  ccgo config'));
@@ -49,28 +46,27 @@ export class ClaudeLauncher {
       return { exitCode: 1, hasApiError: true };
     }
 
+    const envEntries = Object.entries(profile).filter(([, value]) => value && value.trim() !== '');
+    if (envEntries.length === 0) {
+      console.log('');
+      console.log(chalk.red('✗ 当前配置为空，未找到可注入的环境变量'));
+      console.log('');
+      console.log(chalk.gray('请编辑配置文件后重试:'));
+      console.log(chalk.cyan(`  ${this.config.getConfigPath()}`));
+      console.log('');
+      return { exitCode: 1, hasApiError: true };
+    }
+
     // 显示启动信息
     console.log('');
     console.log(chalk.green('✓ 正在启动 Claude Code...'));
+    console.log(chalk.gray(`  已注入环境变量: ${envEntries.map(([key]) => key).join(', ')}`));
     console.log('');
 
-    // 设置环境变量（核心功能）
-    const env: Record<string, string> = {
-      ...process.env as Record<string, string>,
-      ANTHROPIC_API_KEY: apiKey,  // Claude Code 使用这个环境变量
-      ANTHROPIC_BASE_URL: baseUrl || 'https://api.anthropic.com'
-    };
-
-    // 如果配置了可选的模型参数，也注入环境变量
-    const model = profile?.model;
-    const smallFastModel = profile?.smallFastModel;
-
-    if (model) {
-      env.ANTHROPIC_MODEL = model;
-    }
-
-    if (smallFastModel) {
-      env.ANTHROPIC_SMALL_FAST_MODEL = smallFastModel;
+    // 按配置文件中的键值对注入环境变量
+    const env: NodeJS.ProcessEnv = { ...process.env };
+    for (const [key, value] of envEntries) {
+      env[key] = value;
     }
 
     // 构建 Claude 参数
