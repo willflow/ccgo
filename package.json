@@ -1,6 +1,6 @@
 {
   "name": "ccgo",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Claude Code launcher that fixes initial startup errors, supports environment variable injection and multiple profile switching",
   "main": "dist/index.js",
   "bin": {
