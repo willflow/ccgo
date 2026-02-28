@@ -1,58 +1,60 @@
 # CCGO
 
-> Claude Code 启动器 - 解决初次启动报错问题
+English | [简体中文](README.zh-CN.md)
 
-**CCGO** (Claude Code Go) 是专门用于解决 Claude Code 安装后初次启动时出现各种报错问题的启动器。它通过跳过官方的初次认证流程，让你能够直接使用 Claude Code。
+> Claude Code Launcher - Fix Initial Startup Errors
 
-## ❓ 这个启动器解决什么问题
+**CCGO** (Claude Code Go) is a launcher specifically designed to solve various error issues that occur when Claude Code is first started after installation. It allows you to use Claude Code directly by skipping the official initial authentication process.
 
-安装官方 Claude Code 后，初次执行 `claude` 命令时，经常会遇到各种报错导致无法正常使用。CCGO 通过以下方式解决这个问题：
+## ❓ What Problem Does This Launcher Solve
 
-- ✅ **跳过初次认证流程**：自动配置 `hasCompletedOnboarding`，避免卡在第一屏
-- ✅ **环境变量注入**：支持自定义 API 端点和密钥
-- ✅ **多配置切换**：支持多个 profile（ 模型配置，例如各类中转站和国产模型 ），方便切换不同环境
+After installing the official Claude Code, when you first run the `claude` command, you often encounter various errors that prevent normal use. CCGO solves this problem in the following ways:
 
-## 📦 安装
+- ✅ **Skip Initial Authentication**: Automatically configure `hasCompletedOnboarding` to avoid getting stuck on the first screen
+- ✅ **Environment Variable Injection**: Support custom API endpoints and keys
+- ✅ **Multiple Profile Switching**: Support multiple profiles (model configurations, such as various proxy services and domestic models), making it easy to switch between different environments
 
-### 步骤 1：安装官方 Claude Code
+## 📦 Installation
+
+### Step 1: Install Official Claude Code
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-**⚠️ 重要：安装完成后，不要执行 `claude` 命令启动！**
+**⚠️ Important: After installation, do NOT run the `claude` command to start!**
 
-如果你已经启动过并遇到了报错，建议先卸载 Claude Code：
+If you have already started it and encountered errors, it is recommended to uninstall Claude Code first:
 ```bash
 npm uninstall -g @anthropic-ai/claude-code
 ```
-然后重新安装。
+Then reinstall.
 
-### 步骤 2：安装 CCGO 启动器
+### Step 2: Install CCGO Launcher
 
 ```bash
 npm install -g ccgo
 ```
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 1. 初始化配置（必需）
+### 1. Initialize Configuration (Required)
 
 ```bash
 ccgo init
 ```
 
-这会配置 `~/.claude.json`，设置 `hasCompletedOnboarding: true`，跳过官方的初次认证流程。
+This configures `~/.claude.json` and sets `hasCompletedOnboarding: true` to skip the official initial authentication process.
 
-### 2. 配置环境变量（可选）
+### 2. Configure Environment Variables (Optional)
 
 ```bash
 ccgo config
 ```
 
-命令会输出共享配置文件路径和配置示例。按提示手动编辑该配置文件。
+The command outputs the shared configuration file path and configuration examples. Edit the configuration file manually as prompted.
 
-配置示例：
+Configuration example:
 
 ```json
 {
@@ -70,51 +72,51 @@ ccgo config
 }
 ```
 
-### 3. 启动 Claude Code
+### 3. Start Claude Code
 
 ```bash
 ccgo
 ```
 
-有多个 profile 时，会交互选择一个。
+When there are multiple profiles, you will be prompted to select one interactively.
 
-### 4. 无头模式执行任务
+### 4. Run Tasks in Headless Mode
 
 ```bash
-ccgo -p "执行xxx任务"
+ccgo -p "execute xxx task"
 ```
 
-无头模式下如果有多个 profile，默认使用第一个 profile。
+In headless mode, if there are multiple profiles, the first profile is used by default.
 
-## 📖 命令说明
+## 📖 Command Reference
 
-| 命令 | 说明 |
-|------|------|
-| `ccgo init` | **【首次使用必需】** 初始化 Claude Code，跳过初次认证流程 |
-| `ccgo` | 启动 Claude Code（多 profile 时交互选择） |
-| `ccgo -p "任务"` | 无头模式执行任务（默认使用第一个 profile） |
-| `ccgo config` | 显示配置文件位置和示例 |
-| `ccgo help` | 显示帮助信息 |
-| `ccgo -v, --version` | 显示版本号 |
+| Command | Description |
+|---------|-------------|
+| `ccgo init` | **【Required for first use】** Initialize Claude Code, skip initial authentication |
+| `ccgo` | Start Claude Code (interactive selection when multiple profiles exist) |
+| `ccgo -p "task"` | Run tasks in headless mode (uses first profile by default) |
+| `ccgo config` | Show configuration file location and examples |
+| `ccgo help` | Show help information |
+| `ccgo -v, --version` | Show version number |
 
-## 🔧 配置规则
+## 🔧 Configuration Rules
 
-- `profiles.<name>` 下必须是“环境变量键值对”
-- 启动时仅注入该 profile 中有值的键
-- 不会自动补默认字段，不会做字段映射
-- 如果没有 profile 或 profile 为空，启动会直接报错
+- `profiles.<name>` must contain "environment variable key-value pairs"
+- Only keys with values in the profile are injected at startup
+- No default fields are automatically filled, no field mapping is performed
+- If no profile exists or the profile is empty, startup will fail directly
 
-## 🔍 配置文件位置
+## 🔍 Configuration File Location
 
-配置文件存储在：
+Configuration files are stored at:
 - **macOS/Linux**: `~/.config/cc-code-status/config.json`
 - **Windows**: `%APPDATA%\cc-code-status\config.json`
 
 
-## 🤝 贡献
+## 🤝 Contributing
 
-欢迎提交 Issue 和 Pull Request！
+Issues and Pull Requests are welcome!
 
-## 📄 许可证
+## 📄 License
 
 MIT © qilin
